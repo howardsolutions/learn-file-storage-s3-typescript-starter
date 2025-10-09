@@ -83,3 +83,20 @@ In this project we'll cover strategies for handling files that are kilobytes, me
 - Learn how to stream video and to keep data usage low and improve performance
 
 </details>
+
+## Large files
+
+<details>
+<summary>What are "large files" or "large assets"?</summary>
+
+- "Large files" (or "large assets") are big blobs of data, usually encoded in a specific file format, and measured in kilobytes, megabytes, or gigabytes.
+
+**As a simple rule:**
+- If the data makes sense in an Excel spreadsheet, it probably belongs in a traditional database.
+- If the data would normally be stored on your hard drive as its own file, it's probably a "large file".
+
+**Large files are interesting because:**
+- They are large in size (obviously), making them more performance-sensitive.
+- They are often accessed frequently, and their size combined with frequent access can quickly lead to performance bottlenecks.
+
+</details>
