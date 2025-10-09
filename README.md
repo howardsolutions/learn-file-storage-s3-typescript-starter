@@ -1,10 +1,8 @@
 # learn-file-storage-s3-typescript-starter (Tubely)
 
-This repo contains the starter code for the Tubely application - the #1 tool for engagement bait - for the "Learn File Servers and CDNs with S3 and CloudFront" [course](https://www.boot.dev/courses/learn-file-servers-s3-cloudfront-typescript) on [boot.dev](https://www.boot.dev)
+This repo contains the starter code for the Tubely application - the #1 tool for engagement bait - for the "Learn File Servers and CDNs with S3 and CloudFront"
 
 ## Quickstart
-
-*This is to be used as a *reference\* in case you need it, you should follow the instructions in the course rather than trying to do everything here.
 
 ## 1. Install dependencies
 
@@ -63,3 +61,25 @@ bun run src/index.ts
 - You should see a new database file `tubely.db` created in the root directory.
 - You should see a new `assets` directory created in the root directory, this is where the images will be stored.
 - You should see a link in your console to open the local web page.
+
+## LEARNING NOTES
+
+<details>
+<summary>Why do web applications need to handle large files?</summary>
+
+Building a (good) web application almost always involves handling "large" files of some kind - whether it's static images and videos for a marketing site, or user generated content like profile pictures and video uploads, it always seems to come up.
+
+In this project we'll cover strategies for handling files that are kilobytes, megabytes, or even gigabytes in size, as opposed to the small structured data that you might store in a traditional database (integers, booleans, and simple strings).
+</details>
+
+## Learning Goals
+<details>
+<summary>Learning Goals</summary>
+
+- Understand what "large" files are and how they differ from "small" structured data
+- Build an app that uses AWS S3 and Typescript to store and serve assets
+- Learn how to manage files on a "normal" (non-s3) filesystem based application
+- Learn how to store and serve asset AT SCALE using serverless solutions, like AWS S3
+- Learn how to stream video and to keep data usage low and improve performance
+
+</details>
