@@ -1,9 +1,9 @@
 import { getBearerToken, validateJWT } from "../auth";
 import { respondWithJSON } from "./json";
-import { getVideo } from "../db/videos";
+import { getVideo, updateVideo } from "../db/videos";
 import type { ApiConfig } from "../config";
 import type { BunRequest } from "bun";
-import { BadRequestError, NotFoundError } from "./errors";
+import { BadRequestError, NotFoundError, UserForbiddenError } from "./errors";
 
 type Thumbnail = {
   data: ArrayBuffer;
@@ -47,7 +47,57 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
 
   console.log("uploading thumbnail for video", videoId, "by user", userID);
 
-  // TODO: implement the upload here
+  // Parse the form data
+  const formData = await req.formData();
 
-  return respondWithJSON(200, null);
+  // Get the image data from the form
+  const thumbnailFile = formData.get("thumbnail");
+  
+  // Validation 1: Check if it's a File instance
+  if (!(thumbnailFile instanceof File)) {
+    throw new BadRequestError("Thumbnail must be a file");
+  }
+
+  // Validation 2: Check max upload size (10MB)
+  const MAX_UPLOAD_SIZE = 10 << 20; // 10MB
+  if (thumbnailFile.size > MAX_UPLOAD_SIZE) {
+    throw new BadRequestError("File size exceeds maximum allowed size of 10MB");
+  } 
+
+  // Get media type
+  const mediaType = thumbnailFile.type;
+
+  // Read image data into ArrayBuffer
+  const imageData = await thumbnailFile.arrayBuffer();
+
+  // Get video metadata
+  const video = getVideo(cfg.db, videoId);
+  if (!video) {
+    throw new NotFoundError("Video not found");
+  } 
+
+  // Authorization check: ensure user owns the video
+  if (video.userID !== userID) {
+    throw new UserForbiddenError("You don't have permission to upload thumbnails for this video");
+  }
+
+  // Save the thumbnail to the global map
+  videoThumbnails.set(videoId, {
+    data: imageData,
+    mediaType: mediaType,
+  });
+
+  // Generate the thumbnail URL
+  const thumbnailURL = `http://localhost:${cfg.port}/api/thumbnails/${videoId}`;
+
+  // Update the video metadata with the new thumbnail URL
+  const updatedVideo = {
+    ...video,
+    thumbnailURL: thumbnailURL,
+  };
+  
+  updateVideo(cfg.db, updatedVideo);
+
+  // Respond with updated video metadata
+  return respondWithJSON(200, updatedVideo);
 }
