@@ -100,3 +100,8 @@ In this project we'll cover strategies for handling files that are kilobytes, me
 - They are often accessed frequently, and their size combined with frequent access can quickly lead to performance bottlenecks.
 
 </details>
+
+# Encoding
+
+- we can actually encode the image as a `base64` string and shove the whole thing into a text column in SQLite. 
+Base64 is just a way to encode binary (raw) data as text. It's not the most efficient way to do it, but it will work for now.
