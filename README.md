@@ -105,3 +105,23 @@ In this project we'll cover strategies for handling files that are kilobytes, me
 
 - we can actually encode the image as a `base64` string and shove the whole thing into a text column in SQLite. 
 Base64 is just a way to encode binary (raw) data as text. It's not the most efficient way to do it, but it will work for now.
+
+# Using the Filesystem
+
+<details>
+<summary>Why not store images as base64 in SQLite?</summary>
+
+We're using `base64` strings in our SQLite database to store images... let's talk about why that actually kinda sucks:
+
+1. **CPU performance:** Base64 encoding is an expensive, CPU-intensive operation. If we have a lot of uploads (and we're hoping to be successful, right?), this can become a real scaling issue.
+2. **Storage costs:** Base64 encoding increases the size of the image data. We're using more disk space than necessary, which is both expensive and slow.
+3. **Database performance:** Databases (especially relational databases like SQLite, Postgres, and MySQL) are optimized for small, structured data—not giant blobs of binary data. This can seriously impact query performance.
+4. **Caching:** Base64 encoded images aren't as cache friendly as raw files, meaning slower load times and higher bandwidth costs.
+
+It's usually a bad idea to store large binary blobs in a database. There are exceptions, but they are rare. 
+
+**So what's the solution?**  
+Store the files on the filesystem! File systems are optimized for storing and serving files—and they do it very well.
+</details>
+
+
