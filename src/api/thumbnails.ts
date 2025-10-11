@@ -4,7 +4,21 @@ import { getVideo, updateVideo } from "../db/videos";
 import type { ApiConfig } from "../config";
 import type { BunRequest } from "bun";
 import { BadRequestError, NotFoundError, UserForbiddenError } from "./errors";
+import path from "path";
 
+// Helper function to determine file extension from media type
+function getFileExtensionFromMediaType(mediaType: string): string {
+  // Only allow JPEG and PNG images
+  if (mediaType === "image/jpeg" || mediaType === "image/jpg") {
+    return "jpg";
+  }
+  
+  if (mediaType === "image/png") {
+    return "png";
+  }
+  
+  throw new BadRequestError(`Only JPEG and PNG images are allowed. Received: ${mediaType}`);
+}
 
 export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
   const { videoId } = req.params as { videoId?: string };
@@ -34,8 +48,9 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
     throw new BadRequestError("File size exceeds maximum allowed size of 10MB");
   } 
 
-  // Get media type
+  // Get media type and determine file extension
   const mediaType = thumbnailFile.type;
+  const fileExtension = getFileExtensionFromMediaType(mediaType);
 
   // Read image data into ArrayBuffer
   const imageData = await thumbnailFile.arrayBuffer();
@@ -51,19 +66,20 @@ export async function handlerUploadThumbnail(cfg: ApiConfig, req: BunRequest) {
     throw new UserForbiddenError("You don't have permission to upload thumbnails for this video");
   }
 
-  // Convert ArrayBuffer to Buffer
-  const buffer = Buffer.from(imageData);
-  
-  // Convert Buffer to base64 string
-  const base64Data = buffer.toString("base64");
-  
-  // Create data URL with media type and base64 encoded image data
-  const dataURL = `data:${mediaType};base64,${base64Data}`;
+  // Create unique file path using videoID and file extension
+  const fileName = `${videoId}.${fileExtension}`;
+  const filePath = path.join(cfg.assetsRoot, fileName);
 
-  // Update the video metadata with the data URL stored in thumbnail_url
+  // Save file to filesystem using Bun.write
+  await Bun.write(filePath, imageData);
+
+  // Create the new thumbnail URL
+  const thumbnailURL = `http://localhost:${cfg.port}/assets/${fileName}`;
+
+  // Update the video metadata with the new thumbnail URL
   const updatedVideo = {
     ...video,
-    thumbnailURL: dataURL,
+    thumbnailURL: thumbnailURL,
   };
   
   updateVideo(cfg.db, updatedVideo);
