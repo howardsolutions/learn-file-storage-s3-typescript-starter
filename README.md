@@ -141,3 +141,22 @@ audio/mp3
 text/html
 
 When a browser uploads a file via a multipart form, it sends the file's mime type in the Content-Type header.
+
+# CACHE
+
+## Cache Headers
+
+Query strings are a great way to brute force cache controls as the client - but the best way (assuming you have control of the server, and c'mon, we're backend devs), is to use the `Cache-Control` header.
+
+Some common values are:
+
+- no-store: Don't cache this at all
+
+- max-age=3600: Cache this for 1 hour (3600 seconds)
+
+- stale-while-revalidate: Serve stale content while revalidating the cache
+
+- no-cache: Does not mean "don't cache this". It means "cache this, but REVALIDATE it BEFORE SERVING it again"
+
+When the server sends Cache-Control headers, it's up to the browser to respect them, but most modern browsers do.
+
