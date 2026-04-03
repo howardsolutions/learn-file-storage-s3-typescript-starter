@@ -160,3 +160,12 @@ Some common values are:
 
 When the server sends Cache-Control headers, it's up to the browser to respect them, but most modern browsers do.
 
+## "Stale" files are a common problem in web development.
+
+When your app is SMALL, the performance benefits of aggressively caching files might not be worth the complexity and potential bugs that can crop up from not handling CACHE behavior correctly.
+
+After all, the famous quote goes:
+
+### There are only two hard things in Computer Science: cache invalidation, naming things, and off-by-one errors.
+
+In Tubely, we just don't care about old versions of thumbnails. Like ever. So let's just give each new thumbnail version a completely new URL (and path on the filesystem). That way, we can avoid all potential caching issues completely.
