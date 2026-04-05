@@ -169,3 +169,27 @@ After all, the famous quote goes:
 ### There are only two hard things in Computer Science: cache invalidation, naming things, and off-by-one errors.
 
 In Tubely, we just don't care about old versions of thumbnails. Like ever. So let's just give each new thumbnail version a completely new URL (and path on the filesystem). That way, we can avoid all potential caching issues completely.
+
+## Serverless
+
+"Serverless" is an architecture (and let's be honest, a buzzword) that refers to 
+
+a SYSTEM WHERE you don't have to manage the servers on your own.
+
+Serverless is largely misunderstood due to the dubious naming. 
+
+It does not mean there are no servers, it just means they're someone else's problem.
+
+You'll often see "Serverless" used to describe services like AWS Lambda, Google Cloud Functions, and Azure Functions. And that's true, but it refers to "serverless" in its most "pure" form: serverless compute.
+
+## AWS S3
+
+AWS S3 was actually one of the first "serverless" services, and is arguably still the most popular. 
+
+It's not serverless compute, it's serverless STORAGE. 
+
+You don't have to manage/scale/secure the servers that STORE YOUR FILES, AWS does that for you.
+
+Instead of going to a local file system, your server makes network requests to the S3 API to read and write files.
+
+![Serverless Architecture Illustration](notes-images/serverless.png)
