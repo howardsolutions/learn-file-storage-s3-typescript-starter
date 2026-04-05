@@ -193,3 +193,19 @@ You don't have to manage/scale/secure the servers that STORE YOUR FILES, AWS doe
 Instead of going to a local file system, your server makes network requests to the S3 API to read and write files.
 
 ![Serverless Architecture Illustration](notes-images/serverless.png)
+
+### S3 Architecture
+
+File A goes in bucket B at key C. That's it. 
+
+You only need 2 things to access an object in S3:
+
+- The bucket name 
+
+- The object key
+
+Buckets have globally unique names because they are part of the URL used to access them.
+
+If I make a bucket called "bd-vids", you can't make a bucket called "bd-vids", even if you're in a separate AWS account. This makes it really easy to think about where your data lives.
+
+![Serverless Architecture Illustration](notes-images/s3-architecture.png)
