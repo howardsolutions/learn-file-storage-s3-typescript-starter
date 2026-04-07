@@ -241,3 +241,52 @@ Object storage is designed to be more SCALABLE, AVAILABLE, and DURABLE than file
 ## File System Illusion
 
 Directories are really great for organizing stuff. Storing everything in one giant bucket makes a big hard-to-manage mess. So, S3 makes your objects feel like they're in directories, even though they're not.
+
+### It's Just Prefixes
+
+Keys inside of a bucket are just strings. And strings can have slashes, right? Right.
+
+If you upload an object to S3 with the key users/john/profile.jpg, we can kind of pretend that the object is in a directory called users and a subdirectory called john. Not only that, but the S3 API actually provides tools that allow this illusion to thrive.
+
+Let's say I create some objects with keys:
+
+users/dan/profile.jpg
+users/dan/friends.jpg
+users/lane/profile.jpg
+users/lane/friends.jpg
+people/matt/profile.jpg
+
+Then I can use the S3 API to list all the objects with the key prefix users/lane. It returns:
+
+users/lane/profile.jpg
+users/lane/friends.jpg
+
+or just everything with the prefix "users":
+
+users/dan/profile.jpg
+users/dan/friends.jpg
+users/lane/profile.jpg
+users/lane/friends.jpg
+
+It feels like a hierarchy, without all the technical overhead of actually creating directories.
+
+## Dynamic Path
+
+Although directories are an illusion in S3, they're still USEFUL due to the PREFIX filtering capabilities of the S3 API.
+
+There are a lot of common strategies for organizing objects in S3, but the most important rule is:
+
+`Organization matters.`
+
+SCHEMA ARCHITECTURE matters in a SQL database, and PREFIX architecture matters in S3. 
+
+We always want to GROUP objects in a way that makes sense for our case, because often we'll want to OPERATE on a group of objects at once.
+
+For example, pretend you do the naive thing and upload all your images to the root of your bucket. What happens if...
+
+- you want to delete all the images for a specific user?
+- a feature changed and you need to resize all the images it uses?
+- you want to change the permissions of all the images associated with a specific organization?
+
+If you don't have any prefixes (directories) to group objects, you might find yourself iterating over every object in the bucket to find the ones you care about. That's slow and expensive.
+

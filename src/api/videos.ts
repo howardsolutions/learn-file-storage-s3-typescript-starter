@@ -19,6 +19,66 @@ function parseVideoId(videoId: string | undefined): string {
   return videoId;
 }
 
+async function getVideoAspectRatio(filePath: string): Promise<string> {
+  const proc = Bun.spawn([
+    "ffprobe",
+    "-v",
+    "error",
+    "-select_streams",
+    "v:0",
+    "-show_entries",
+    "stream=width,height",
+    "-of",
+    "json",
+    filePath,
+  ], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  const stdoutText = await new Response(proc.stdout).text();
+  const stderrText = await new Response(proc.stderr).text();
+  const exited = await proc.exited;
+
+  if (exited !== 0) {
+    throw new BadRequestError(
+      `Failed to inspect video file with ffprobe: ${stderrText || stdoutText}`,
+    );
+  }
+
+  type ProbeOutput = {
+    streams?: Array<{ width?: number; height?: number }>;
+  };
+
+  let parsedOutput: ProbeOutput;
+  try {
+    parsedOutput = JSON.parse(stdoutText) as ProbeOutput;
+  } catch {
+    throw new BadRequestError("Failed to parse ffprobe output");
+  }
+
+  const width = parsedOutput.streams?.[0]?.width;
+  const height = parsedOutput.streams?.[0]?.height;
+  if (!width || !height) {
+    throw new BadRequestError("Could not determine video dimensions");
+  }
+
+  const ratio = width / height;
+  const landscapeRatio = 16 / 9;
+  const portraitRatio = 9 / 16;
+  const tolerance = 0.05;
+
+  if (Math.abs(ratio - landscapeRatio) <= tolerance) {
+    return "landscape";
+  }
+
+  if (Math.abs(ratio - portraitRatio) <= tolerance) {
+    return "portrait";
+  }
+
+  return "other";
+}
+
 export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
   const MAX_UPLOAD_BYTES = 1 << 30;
 
@@ -57,7 +117,8 @@ export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
   try {
     await Bun.write(tempPath, file);
 
-    const key = `${randomBytes(16).toString("hex")}.mp4`;
+    const aspectRatio = await getVideoAspectRatio(tempPath);
+    const key = `${aspectRatio}/${randomBytes(16).toString("hex")}.mp4`;
 
     const s3File = cfg.s3Client.file(key, {
       bucket: cfg.s3Bucket,
@@ -70,11 +131,11 @@ export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
 
     const videoURL = `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${key}`;
     video.videoURL = videoURL;
-    
+
     updateVideo(cfg.db, video);
 
     return respondWithJSON(200, video);
   } finally {
-    await unlink(tempPath).catch(() => {});
+    await unlink(tempPath).catch(() => { });
   }
 }
