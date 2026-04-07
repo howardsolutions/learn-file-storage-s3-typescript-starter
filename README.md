@@ -172,11 +172,11 @@ In Tubely, we just don't care about old versions of thumbnails. Like ever. So le
 
 ## Serverless
 
-"Serverless" is an architecture (and let's be honest, a buzzword) that refers to 
+"Serverless" is an architecture (and let's be honest, a buzzword) that refers to
 
 a SYSTEM WHERE you don't have to manage the servers on your own.
 
-Serverless is largely misunderstood due to the dubious naming. 
+Serverless is largely misunderstood due to the dubious naming.
 
 It does not mean there are no servers, it just means they're someone else's problem.
 
@@ -184,9 +184,9 @@ You'll often see "Serverless" used to describe services like AWS Lambda, Google 
 
 ## AWS S3
 
-AWS S3 was actually one of the first "serverless" services, and is arguably still the most popular. 
+AWS S3 was actually one of the first "serverless" services, and is arguably still the most popular.
 
-It's not serverless compute, it's serverless STORAGE. 
+It's not serverless compute, it's serverless STORAGE.
 
 You don't have to manage/scale/secure the servers that STORE YOUR FILES, AWS does that for you.
 
@@ -196,11 +196,11 @@ Instead of going to a local file system, your server makes network requests to t
 
 ### S3 Architecture
 
-File A goes in bucket B at key C. That's it. 
+File A goes in bucket B at key C. That's it.
 
 You only need 2 things to access an object in S3:
 
-- The bucket name 
+- The bucket name
 
 - The object key
 
@@ -209,3 +209,35 @@ Buckets have globally unique names because they are part of the URL used to acce
 If I make a bucket called "bd-vids", you can't make a bucket called "bd-vids", even if you're in a separate AWS account. This makes it really easy to think about where your data lives.
 
 ![Serverless Architecture Illustration](notes-images/s3-architecture.png)
+
+### SDKs and S3
+
+An SDK or "Software Development Kit" is just a collection of tools (often involving an importable library) that helps you interact with a specific service or technology.
+
+AWS has official SDKs for most popular programming languages. They're usually the best way to interact with AWS services.
+
+# OBJECT STORAGE
+
+## Traditional File Storage
+
+"File storage" is what you're already familiar with:
+
+Files are stored in a hierarchy of directories
+
+A file's system-level metadata (like timestamp and permissions) is managed by the file system, not the file itself
+
+File storage is great for SINGLE-machine-use (like your laptop), but it doesn't distribute well across many servers.
+
+It's optimized for low-latency access to a small number of files on a SINGLE machine.
+
+## Object Storage
+
+Object storage is designed to be more SCALABLE, AVAILABLE, and DURABLE than file storage because it can be easily distributed across many machines:
+
+- Objects are stored in a flat namespace (no directories)
+
+- An object's metadata is stored with the object itself
+
+## File System Illusion
+
+Directories are really great for organizing stuff. Storing everything in one giant bucket makes a big hard-to-manage mess. So, S3 makes your objects feel like they're in directories, even though they're not.
