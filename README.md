@@ -312,3 +312,29 @@ S3 servers support it by default.
 
 - A 206 status code means "Partial Content" - that's because the browser is smart enough to realize that it should not download the entire 100MB+ video before starting to play it. It's downloading just enough to start playing the MP4 file.
 
+# Security 
+
+Cloud security is a giant can of worms. This isn't a security course, but I do want to give you a few pointers to keep you safe with a simple setup while using S3. A few things to think about:
+
+1. WHO can access your bucket, and which parts of your bucket can they access?
+2. What ACTIONS can they take?
+3. HOW are they authenticated? And from where can they authenticate?
+
+At the moment, in your Tubely app:
+
+- Your bucket is publicly accessible. Anyone can get any individual object in your bucket.
+
+- Anyone can get the objects in your bucket, but only Tubely (and you) can change them or list them.
+
+- Public readers aren't authenticated, but your code is authenticated with your AWS IAM access key.
+
+## Keys Aren't Enough
+
+While it's great that an attacker would need to steal your AWS credentials to be able to maliciously change the contents of your bucket, relying only on the secrecy of keys is often not enough.
+
+Keys and passwords are compromised all the time.
+
+One way to add an additional layer of security is to ensure that your keys can only be used from certain (virtual) locations. 
+
+Then an attacker would need your keys and to be on your network to gain access.
+
