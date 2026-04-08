@@ -1,11 +1,10 @@
-import { randomBytes } from "node:crypto";
-import { unlink } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import type { BunRequest } from "bun";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import { getBearerToken, validateJWT } from "../auth";
 import type { ApiConfig } from "../config";
 import { getVideo, updateVideo } from "../db/videos";
+import { uploadVideoToS3 } from "../s3";
 import { BadRequestError, NotFoundError, UserForbiddenError } from "./errors";
 import { respondWithJSON } from "./json";
 
@@ -79,63 +78,88 @@ async function getVideoAspectRatio(filePath: string): Promise<string> {
   return "other";
 }
 
-export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
-  const MAX_UPLOAD_BYTES = 1 << 30;
+async function processVideoForFastStart(inputFilePath: string): Promise<string> {
+  const outputFilePath = `${inputFilePath}.processed`;
 
-  const videoId = parseVideoId((req.params as { videoId?: string }).videoId);
+  const proc = Bun.spawn([
+    "ffmpeg",
+    "-i",
+    inputFilePath,
+    "-movflags",
+    "faststart",
+    "-map_metadata",
+    "0",
+    "-codec",
+    "copy",
+    "-f",
+    "mp4",
+    outputFilePath,
+  ], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  const stdoutText = await new Response(proc.stdout).text();
+  const stderrText = await new Response(proc.stderr).text();
+  const exited = await proc.exited;
+
+  if (exited !== 0) {
+    throw new BadRequestError(
+      `Failed to process video for fast start with ffmpeg: ${stderrText || stdoutText}`,
+    );
+  }
+
+  return outputFilePath;
+}
+
+export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
+  const MAX_UPLOAD_SIZE = 1 << 30;
+
+  const { videoId } = req.params as { videoId?: string };
+  if (!videoId) {
+    throw new BadRequestError("Invalid video ID");
+  }
 
   const token = getBearerToken(req.headers);
   const userID = validateJWT(token, cfg.jwtSecret);
 
   const video = getVideo(cfg.db, videoId);
-
   if (!video) {
     throw new NotFoundError("Couldn't find video");
   }
-
   if (video.userID !== userID) {
     throw new UserForbiddenError("Not authorized to update this video");
   }
 
   const formData = await req.formData();
   const file = formData.get("video");
-
   if (!(file instanceof File)) {
     throw new BadRequestError("Video file missing");
   }
-
-  if (file.size > MAX_UPLOAD_BYTES) {
-    throw new BadRequestError("Video file exceeds the maximum allowed size of 1GB");
+  if (file.size > MAX_UPLOAD_SIZE) {
+    throw new BadRequestError("File exceeds size limit (1GB)");
   }
-
   if (file.type !== "video/mp4") {
-    throw new BadRequestError("Invalid file type. Only MP4 video is allowed.");
+    throw new BadRequestError("Invalid file type, only MP4 is allowed");
   }
 
-  const tempPath = join(tmpdir(), `video-upload-${randomBytes(16).toString("hex")}.mp4`);
+  const tempFilePath = path.join("/tmp", `${videoId}.mp4`);
+  await Bun.write(tempFilePath, file);
 
-  try {
-    await Bun.write(tempPath, file);
+  const aspectRatio = await getVideoAspectRatio(tempFilePath);
+  const processedFilePath = await processVideoForFastStart(tempFilePath);
 
-    const aspectRatio = await getVideoAspectRatio(tempPath);
-    const key = `${aspectRatio}/${randomBytes(16).toString("hex")}.mp4`;
+  const key = `${aspectRatio}/${videoId}.mp4`;
+  await uploadVideoToS3(cfg, key, processedFilePath, "video/mp4");
 
-    const s3File = cfg.s3Client.file(key, {
-      bucket: cfg.s3Bucket,
-      type: "video/mp4",
-    });
+  const videoURL = `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${key}`;
+  video.videoURL = videoURL;
+  updateVideo(cfg.db, video);
 
-    await s3File.write(Bun.file(tempPath), {
-      type: "video/mp4",
-    });
-
-    const videoURL = `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${key}`;
-    video.videoURL = videoURL;
-
-    updateVideo(cfg.db, video);
-
-    return respondWithJSON(200, video);
-  } finally {
-    await unlink(tempPath).catch(() => { });
-  }
+  await Promise.all([
+    rm(tempFilePath, { force: true }),
+    rm(`${tempFilePath}.processed.mp4`, { force: true }),
+  ]);
+  
+  return respondWithJSON(200, video);
 }
