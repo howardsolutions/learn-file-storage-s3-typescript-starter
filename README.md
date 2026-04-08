@@ -278,7 +278,7 @@ There are a lot of common strategies for organizing objects in S3, but the most 
 
 `Organization matters.`
 
-SCHEMA ARCHITECTURE matters in a SQL database, and PREFIX architecture matters in S3. 
+SCHEMA ARCHITECTURE matters in a SQL database, and PREFIX architecture matters in S3.
 
 We always want to GROUP objects in a way that makes sense for our case, because often we'll want to OPERATE on a group of objects at once.
 
@@ -289,4 +289,26 @@ For example, pretend you do the naive thing and upload all your images to the ro
 - you want to change the permissions of all the images associated with a specific organization?
 
 If you don't have any prefixes (directories) to group objects, you might find yourself iterating over every object in the bucket to find the ones you care about. That's slow and expensive.
+
+# Streaming
+
+NO one is on dial-up 256k modems, we typically don't worry about "streaming" smaller files like images.
+
+GIANT audio files (like audio books), and especially large video files should be streamed rather than downloaded. At least if you want your user to be able to start consuming the content immediately.
+
+## Streaming vs. Downloading
+
+- Downloading is when you WAIT for the ENTIRE file to be transferred BEFORE you can start using it.
+
+- Streaming is when you start USING the file immediately while it's STILL BEING transferred in the background.
+
+The simplest way to stream a video file on the web (imo) is to take advantage of two things:
+
+The native HTML5 <video> element. It STREAMS video files by DEFAULT as long as the server supports it.
+
+The Range HTTP header. It allows the client to request specific byte ranges of a file, enabling partial downloads. 
+
+S3 servers support it by default.
+
+- A 206 status code means "Partial Content" - that's because the browser is smart enough to realize that it should not download the entire 100MB+ video before starting to play it. It's downloading just enough to start playing the MP4 file.
 
