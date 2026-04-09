@@ -354,3 +354,25 @@ Let's just pretend that you are the engineering manager, that Tubely is a small 
 Fine.
 
 But that doesn't mean we can't still scope down the permissions of the application itself.
+
+## Private Bucket
+
+Our tubely bucket is public (remember how we unchecked "Block all public access" in the bucket settings when we made it?).
+
+Public buckets are useful WHEN you want to serve public content directly from them, like user profile pictures, for example. 
+
+However, you should only use them when you're certain all the content should be public, and you're okay with the risks of anyone on the internet using the bandwidth you pay AWS for to download your assets over and over again...
+
+A good use case for a public bucket might be:
+
+Users' profile pictures
+Public certificates of completion 
+Dynamically generated images for social sharing (like the link previews you see on Twitter)
+
+While a private bucket might contain:
+
+A user's privately uploaded documents
+A user's draft content that they haven't published yet
+The org's video content that's only available to paying customers
+
+
