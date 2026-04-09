@@ -338,3 +338,19 @@ One way to add an additional layer of security is to ensure that your keys can o
 
 Then an attacker would need your keys and to be on your network to gain access.
 
+## Scoping Permission 
+
+A critical rule of thumb in cyber security is `the principle of least privilege`: 
+You should allow the fewest permissions possible that can still get the job done.
+
+For example, your user is in the "manager" group which we gave "full admin access" to. 
+
+Especially at smaller companies, it's common for folks to have more permissions than they truly need, usually for the sake of SPEED and CONVENIENCE.
+
+But that's NOT the most secure way to do things.
+
+Let's just pretend that you are the engineering manager, that Tubely is a small company, and so it does make sense for your IAM user to have full admin access.
+
+Fine.
+
+But that doesn't mean we can't still scope down the permissions of the application itself.
