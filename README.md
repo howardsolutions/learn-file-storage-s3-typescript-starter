@@ -389,3 +389,14 @@ Okay, so now that we've switched to a private bucket, we have a problem. Our cod
 
 Let's use presigned URLs to fix it! Now, we're gonna do something a bit... hacky. There's no point in storing pre-signed URLs in the database, because they expire quickly. Instead, we'll use the video_url column to store the bucket and key of the video, then we'll use that to generate the presigned URL on the fly and respond with it on the API.
 
+## Encryption
+
+Although our S3 bucket is private (which means outsiders can't gain access to the files directly without credentials), it's still good for stuff to be encrypted. After all, what if a hacker physically walked into the data center to read our customers' secrets directly?
+
+At Rest
+Files in S3 are encrypted at rest ("at rest" just means "while they're sitting in storage on disk") by default. This was not always the case, but it is now! You don't need to do anything, the S3 service takes care of all of that for you. When you access S3 with your credentials, the service decrypts the files for you before handing them over.
+
+In Transit
+When you're uploading or downloading files from S3, how do you know that someone can't intercept the data as it travels through the internet? Well, when you access S3 via the web, you're using httpS. The S means that the data is encrypted as it travels between your computer and the S3 service.
+
+When you access S3 via the Bun S3 API (in your TypeScript code), it also uses HTTPS by default. So as long as you don't go out of your way to disable encryption, you're good to go.
