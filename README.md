@@ -375,4 +375,17 @@ A user's privately uploaded documents
 A user's draft content that they haven't published yet
 The org's video content that's only available to paying customers
 
+## Signed URLs
+
+Presigned URLs are a way to give TEMPORARY access to a PRIVATE object in S3. 
+
+S3 will generate a URL (by attaching a cryptographic signature) that allows access to the object for a limited time. 
+
+To be clear, it doesn't require the user to be logged in - it's just a URL that expires.
+
+The idea is that we'll generate these URLs with very short life spans, and then only give them to users who have already been authenticated by your application.
+
+Okay, so now that we've switched to a private bucket, we have a problem. Our code in that app's current state will generate URLs that simply put, won't work. Let's try it!
+
+Let's use presigned URLs to fix it! Now, we're gonna do something a bit... hacky. There's no point in storing pre-signed URLs in the database, because they expire quickly. Instead, we'll use the video_url column to store the bucket and key of the video, then we'll use that to generate the presigned URL on the fly and respond with it on the API.
 

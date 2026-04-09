@@ -3,13 +3,15 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 import { getBearerToken, validateJWT } from "../auth";
 import type { ApiConfig } from "../config";
-import { getVideo, updateVideo } from "../db/videos";
+import { getVideo, type Video, updateVideo } from "../db/videos";
 import { uploadVideoToS3 } from "../s3";
 import { BadRequestError, NotFoundError, UserForbiddenError } from "./errors";
 import { respondWithJSON } from "./json";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+const VIDEO_SIGN_EXPIRES_IN_SECONDS = 300;
 
 function parseVideoId(videoId: string | undefined): string {
   if (!videoId || !UUID_RE.test(videoId)) {
@@ -112,13 +114,34 @@ async function processVideoForFastStart(inputFilePath: string): Promise<string> 
   return outputFilePath;
 }
 
+export function generatePresignedURL(
+  cfg: ApiConfig,
+  key: string,
+  expireTime: number,
+): string {
+  const videoFile = cfg.s3Client.file(key, { bucket: cfg.s3Bucket });
+  return videoFile.presign({
+    expiresIn: expireTime,
+    method: "GET",
+  });
+}
+
+export function dbVideoToSignedVideo(cfg: ApiConfig, video: Video): Video {
+  if (!video.videoURL) {
+    return video;
+  }
+
+  return {
+    ...video,
+    videoURL: generatePresignedURL(cfg, video.videoURL, VIDEO_SIGN_EXPIRES_IN_SECONDS),
+  };
+}
+
 export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
   const MAX_UPLOAD_SIZE = 1 << 30;
 
-  const { videoId } = req.params as { videoId?: string };
-  if (!videoId) {
-    throw new BadRequestError("Invalid video ID");
-  }
+  const { videoId: rawVideoId } = req.params as { videoId?: string };
+  const videoId = parseVideoId(rawVideoId);
 
   const token = getBearerToken(req.headers);
   const userID = validateJWT(token, cfg.jwtSecret);
@@ -152,14 +175,13 @@ export async function handlerUploadVideo(cfg: ApiConfig, req: BunRequest) {
   const key = `${aspectRatio}/${videoId}.mp4`;
   await uploadVideoToS3(cfg, key, processedFilePath, "video/mp4");
 
-  const videoURL = `https://${cfg.s3Bucket}.s3.${cfg.s3Region}.amazonaws.com/${key}`;
-  video.videoURL = videoURL;
+  video.videoURL = key;
   updateVideo(cfg.db, video);
 
   await Promise.all([
     rm(tempFilePath, { force: true }),
-    rm(`${tempFilePath}.processed.mp4`, { force: true }),
+    rm(processedFilePath, { force: true }),
   ]);
-  
-  return respondWithJSON(200, video);
+
+  return respondWithJSON(200, dbVideoToSignedVideo(cfg, video));
 }
