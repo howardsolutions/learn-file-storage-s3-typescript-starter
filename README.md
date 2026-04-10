@@ -407,18 +407,36 @@ A Content Delivery Network (CDN) is a (typically global) network of servers that
 
 When we give users a URL to an S3 object, they'll download that object from the S3 service in the region that our bucket lives in (for me, that's us-east-2, near Ohio in the USA).
 
-If a user in Australia tries to download that object, they're going to have to wait for the data to travel from Ohio to Australia... and that's a long way! 
+If a user in Australia tries to download that object, they're going to have to wait for the data to travel from Ohio to Australia... and that's a long way!
 
 A CDN, like AWS CloudFront, can help with that. It takes a static asset, like an image or video, and caches it on servers all over the world. When a user requests the asset, they get it from the server closest to them, which is much faster.
 
-In the example above, the "origin" server is an S3 bucket, and the "edge" servers are CloudFront servers. 
+In the example above, the "origin" server is an S3 bucket, and the "edge" servers are CloudFront servers.
 
 The origin is in the US, and whenever it updates, the edge servers update their caches. Then, when a user connects in Australia, they get the copy of the asset from the edge server in Australia. Much faster!
-__________
-Behind the scenes, creating the distribution through the UI also updates the S3 bucket policy to allow the newly created distribution to access files in the bucket. 
+
+---
+
+Behind the scenes, creating the distribution through the UI also updates the S3 bucket policy to allow the newly created distribution to access files in the bucket.
 
 If you want to check the new policy, go back to your S3 bucket, click on the "Permissions" tab, and look for "Bucket Policy".
 
-
 - Signed URLs are useful for truly private content, but if all you need is more protection and control over files that you want to make publicly accessible, a CDN is a better choice. CDN's like CloudFront not only offer better security than serving files directly from S3 (due to more granular controls, firewalls, and DDoS protection), but they also offer better performance.
+
+# Invalidations
+
+A CDN is a massive, globally DISTRIBUTED CACHE.
+
+Sure, we get massive performance improvements, because users that are geographically close to an edge server can download assets much faster than if they had to travel to the origin server.
+
+But what happens when we update an asset? How long does it take the edge servers to update their versions?
+
+The answer is: it depends. That's always the tradeoff with cache - you need to deal with invalidations.
+
+Luckily CloudFront makes it fairly `easy to force invalidations of the cache`.
+
+- An invalidation is a request to remove an object from the cache. That means the next time a user requests the object, the edge server will have to go back to the origin server to get the latest version. That means it will be slower for the first user, but fast again for subsequent users.
+
+You already know what stale caches look like, so I'll spare you the demonstration. But just know that if you're having issues with stale content, creating an invalidation is the way to fix it. Let's create one, just for fun.
+
 
