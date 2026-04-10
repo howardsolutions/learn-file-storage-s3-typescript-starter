@@ -306,13 +306,13 @@ The simplest way to stream a video file on the web (imo) is to take advantage of
 
 The native HTML5 <video> element. It STREAMS video files by DEFAULT as long as the server supports it.
 
-The Range HTTP header. It allows the client to request specific byte ranges of a file, enabling partial downloads. 
+The Range HTTP header. It allows the client to request specific byte ranges of a file, enabling partial downloads.
 
 S3 servers support it by default.
 
 - A 206 status code means "Partial Content" - that's because the browser is smart enough to realize that it should not download the entire 100MB+ video before starting to play it. It's downloading just enough to start playing the MP4 file.
 
-# Security 
+# Security
 
 Cloud security is a giant can of worms. This isn't a security course, but I do want to give you a few pointers to keep you safe with a simple setup while using S3. A few things to think about:
 
@@ -334,16 +334,16 @@ While it's great that an attacker would need to steal your AWS credentials to be
 
 Keys and passwords are compromised all the time.
 
-One way to add an additional layer of security is to ensure that your keys can only be used from certain (virtual) locations. 
+One way to add an additional layer of security is to ensure that your keys can only be used from certain (virtual) locations.
 
 Then an attacker would need your keys and to be on your network to gain access.
 
-## Scoping Permission 
+## Scoping Permission
 
-A critical rule of thumb in cyber security is `the principle of least privilege`: 
+A critical rule of thumb in cyber security is `the principle of least privilege`:
 You should allow the fewest permissions possible that can still get the job done.
 
-For example, your user is in the "manager" group which we gave "full admin access" to. 
+For example, your user is in the "manager" group which we gave "full admin access" to.
 
 Especially at smaller companies, it's common for folks to have more permissions than they truly need, usually for the sake of SPEED and CONVENIENCE.
 
@@ -359,14 +359,14 @@ But that doesn't mean we can't still scope down the permissions of the applicati
 
 Our tubely bucket is public (remember how we unchecked "Block all public access" in the bucket settings when we made it?).
 
-Public buckets are useful WHEN you want to serve public content directly from them, like user profile pictures, for example. 
+Public buckets are useful WHEN you want to serve public content directly from them, like user profile pictures, for example.
 
 However, you should only use them when you're certain all the content should be public, and you're okay with the risks of anyone on the internet using the bandwidth you pay AWS for to download your assets over and over again...
 
 A good use case for a public bucket might be:
 
 Users' profile pictures
-Public certificates of completion 
+Public certificates of completion
 Dynamically generated images for social sharing (like the link previews you see on Twitter)
 
 While a private bucket might contain:
@@ -377,9 +377,9 @@ The org's video content that's only available to paying customers
 
 ## Signed URLs
 
-Presigned URLs are a way to give TEMPORARY access to a PRIVATE object in S3. 
+Presigned URLs are a way to give TEMPORARY access to a PRIVATE object in S3.
 
-S3 will generate a URL (by attaching a cryptographic signature) that allows access to the object for a limited time. 
+S3 will generate a URL (by attaching a cryptographic signature) that allows access to the object for a limited time.
 
 To be clear, it doesn't require the user to be logged in - it's just a URL that expires.
 
@@ -400,3 +400,25 @@ In Transit
 When you're uploading or downloading files from S3, how do you know that someone can't intercept the data as it travels through the internet? Well, when you access S3 via the web, you're using httpS. The S means that the data is encrypted as it travels between your computer and the S3 service.
 
 When you access S3 via the Bun S3 API (in your TypeScript code), it also uses HTTPS by default. So as long as you don't go out of your way to disable encryption, you're good to go.
+
+# CDNs
+
+A Content Delivery Network (CDN) is a (typically global) network of servers that CACHES and DELIVERS content to users based on their geographic location.
+
+When we give users a URL to an S3 object, they'll download that object from the S3 service in the region that our bucket lives in (for me, that's us-east-2, near Ohio in the USA).
+
+If a user in Australia tries to download that object, they're going to have to wait for the data to travel from Ohio to Australia... and that's a long way! 
+
+A CDN, like AWS CloudFront, can help with that. It takes a static asset, like an image or video, and caches it on servers all over the world. When a user requests the asset, they get it from the server closest to them, which is much faster.
+
+In the example above, the "origin" server is an S3 bucket, and the "edge" servers are CloudFront servers. 
+
+The origin is in the US, and whenever it updates, the edge servers update their caches. Then, when a user connects in Australia, they get the copy of the asset from the edge server in Australia. Much faster!
+__________
+Behind the scenes, creating the distribution through the UI also updates the S3 bucket policy to allow the newly created distribution to access files in the bucket. 
+
+If you want to check the new policy, go back to your S3 bucket, click on the "Permissions" tab, and look for "Bucket Policy".
+
+
+- Signed URLs are useful for truly private content, but if all you need is more protection and control over files that you want to make publicly accessible, a CDN is a better choice. CDN's like CloudFront not only offer better security than serving files directly from S3 (due to more granular controls, firewalls, and DDoS protection), but they also offer better performance.
+
