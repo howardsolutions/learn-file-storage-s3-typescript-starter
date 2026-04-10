@@ -439,4 +439,19 @@ Luckily CloudFront makes it fairly `easy to force invalidations of the cache`.
 
 You already know what stale caches look like, so I'll spare you the demonstration. But just know that if you're having issues with stale content, creating an invalidation is the way to fix it. Let's create one, just for fun.
 
+## Bucket Versioning
+
+By default, S3 does not store multiple versions of an object. If you upload a file to a key that already contains an object, the old object is overwritten.
+
+Bucket versioning is an optional feature where the bucket stores multiple versions of an object. It helps:
+
+- Prevent accidental deletion
+- Rollback to previous versions of files
+- Store multiple versions of files in the same key
+
+On that last point, I recommend primarily using object versions for "just-in-case" purposes, not for expected day-to-day versioning. 
+
+If you have an application that stores multiple versions of the "same" object, I would probably store them in different keys entirely. 
+
+If I write a bug, I don't want to screw up my "user's versions"... I prefer my infrastructure-level backups to only be used for disaster recovery.
 
